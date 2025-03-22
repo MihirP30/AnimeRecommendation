@@ -164,13 +164,15 @@ if __name__ == "__main__":
     anime_graph, title_to_id, anime_data = build_anime_graph(csv_file)
 
     anime_name = input("Enter an anime name for recommendations: ").strip().lower()
-    if anime_name in title_to_id:
-        closest_anime_id = anime_graph.find_closest_anime(title_to_id[anime_name])
-        if closest_anime_id:
-            print(f"Recommended Anime: {anime_data[closest_anime_id][0]}")
-        else:
-            print("No recommendations found.")
+
+    while anime_name not in title_to_id:
+        anime_name = (input("Anime not found in the dataset. Please check for spelling or enter a different anime: ")
+                      .strip().lower())
+
+    closest_anime_id = anime_graph.find_closest_anime(title_to_id[anime_name])
+    if closest_anime_id:
+        print(f"Recommended Anime: {anime_data[closest_anime_id][0]}")
     else:
-        print("Anime not found in the dataset.")
+        print("No recommendations found.")
 
     exit()
