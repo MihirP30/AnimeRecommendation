@@ -120,6 +120,9 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
         for row in reader:
             anime_id = row["anime_id"]
             title = row["title"]
+            title_english = row["title_english"]
+            title_japanese = row["title_japanese"]
+            title_synonyms = row["title_synonyms"].split(", ") if row["title_synonyms"] else []
             genres = row["genre"].split(", ") if row["genre"] else []
             studio = row["studio"]
             related = row["related"].split(", ") if row["related"] else []
@@ -127,7 +130,12 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
 
             anime_graph.add_vertex(anime_id, popularity)
             anime_data[anime_id] = (title, genres, studio, related)
-            title_to_id[title.lower()] = anime_id
+
+            # Normalize and store titles (including official and alternative titles)
+            normalized_titles = [title, title_english, title_japanese] + title_synonyms
+            for norm_title in normalized_titles:
+                normalized_title = norm_title.strip().lower()  # Ensure case-insensitive comparison
+                title_to_id[normalized_title] = anime_id
 
             for genre in genres:
                 if genre not in genre_to_anime:
@@ -139,6 +147,7 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
                     studio_to_anime[studio] = set()
                 studio_to_anime[studio].add(anime_id)
 
+        # Build edges between anime in the same genre or studio
         for anime_list in genre_to_anime.values():
             anime_list = list(anime_list)
             for i in range(len(anime_list)):
@@ -151,12 +160,14 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
                 for j in range(i + 1, len(anime_list)):
                     anime_graph.add_edge(anime_list[i], anime_list[j], 3)
 
+        # Add related anime as edges
         for anime_id, (_, _, _, related) in anime_data.items():
             for related_anime in related:
                 if related_anime in anime_data:
                     anime_graph.add_edge(anime_id, related_anime, 1)
 
     return anime_graph, title_to_id, anime_data
+
 
 
 if __name__ == "__main__":
