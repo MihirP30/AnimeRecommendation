@@ -78,16 +78,35 @@ class Graph:
                 closest_anime_candidates.append(anime)
 
         # If multiple anime have the same closeness, return the most popular one (excluding popularity = 0)
-        if closest_anime_candidates:
+        closest_anime_candidates = []
+        min_distance = float('inf')
+
+        for anime, distance in distances.items():
+            if anime != start and distance < min_distance:
+                min_distance = distance
+                closest_anime_candidates = [anime]
+            elif anime != start and distance == min_distance:
+                closest_anime_candidates.append(anime)
+
+        # Use a popularity similarity window (±1000 by default)
+        original_popularity = self.popularity.get(start, float('inf'))
+        POPULARITY_WINDOW = 100
+
+        filtered_candidates = [
+            anime for anime in closest_anime_candidates
+            if abs(self.popularity.get(anime, float('inf')) - original_popularity) <= POPULARITY_WINDOW
+        ]
+
+        if filtered_candidates:
             return min(
-                closest_anime_candidates,
-                key=lambda anime: self.popularity.get(anime, float('inf')) if self.popularity.get(anime, 0) != 0 else float('inf')
+                filtered_candidates,
+                key=lambda anime: self.popularity.get(anime, float('inf'))
             )
 
         return None
 
 
-def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str]]:
+def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[str, tuple]]:
     """Read AnimeList.csv and build a graph with weighted edges."""
     anime_graph = Graph()
     anime_data = {}
@@ -137,23 +156,18 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str]]:
                 if related_anime in anime_data:
                     anime_graph.add_edge(anime_id, related_anime, 1)
 
-    # next steps:
-    # - make it recomend a title with similar popularity ranking as the one they entered
-    # - make it recommend multiple titles instead of one
-    # - make it return the name of the anime instead of the number
-
-    return anime_graph, title_to_id
+    return anime_graph, title_to_id, anime_data
 
 
 if __name__ == "__main__":
     csv_file = "AnimeList.csv"  # Update with actual path
-    anime_graph, title_to_id = build_anime_graph(csv_file)
+    anime_graph, title_to_id, anime_data = build_anime_graph(csv_file)
 
     anime_name = input("Enter an anime name for recommendations: ").strip().lower()
     if anime_name in title_to_id:
         closest_anime_id = anime_graph.find_closest_anime(title_to_id[anime_name])
         if closest_anime_id:
-            print(f"Recommended Anime: {closest_anime_id}")
+            print(f"Recommended Anime: {anime_data[closest_anime_id][0]}")
         else:
             print("No recommendations found.")
     else:
