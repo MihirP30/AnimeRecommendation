@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import csv
 import heapq
 from typing import Any
@@ -6,7 +8,7 @@ from typing import Any
 class _Vertex:
     """A vertex in a graph."""
     item: Any
-    neighbours: dict["_Vertex", int]  # Stores neighbors with weights
+    neighbours: dict[_Vertex, int]  # Stores neighbors with weights
 
     def __init__(self, item: Any) -> None:
         """Initialize a new vertex with the given item."""
@@ -134,6 +136,11 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str]]:
             for related_anime in related:
                 if related_anime in anime_data:
                     anime_graph.add_edge(anime_id, related_anime, 1)
+
+    # next steps:
+    # - make it recomend a title with similar popularity ranking as the one they entered
+    # - make it recommend multiple titles instead of one
+    # - make it return the name of the anime instead of the number
 
     return anime_graph, title_to_id
 
