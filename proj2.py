@@ -90,11 +90,11 @@ class Graph:
 
         # Use a popularity similarity window (±1000 by default)
         original_popularity = self.popularity.get(start, float('inf'))
-        POPULARITY_WINDOW = 100
+        popularity_window = 100
 
         filtered_candidates = [
             anime for anime in closest_anime_candidates
-            if abs(self.popularity.get(anime, float('inf')) - original_popularity) <= POPULARITY_WINDOW
+            if abs(self.popularity.get(anime, float('inf')) - original_popularity) <= popularity_window
         ]
 
         if filtered_candidates:
@@ -169,9 +169,8 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
     return anime_graph, title_to_id, anime_data
 
 
-
 if __name__ == "__main__":
-    csv_file = "AnimeList.csv"  # Update with actual path
+    csv_file = "CleanedAnimeList.csv"  # Update with actual path
     anime_graph, title_to_id, anime_data = build_anime_graph(csv_file)
 
     anime_name = input("Enter an anime name for recommendations: ").strip().lower()
