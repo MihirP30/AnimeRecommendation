@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import heapq
+import math
 from typing import Any
 
 
@@ -100,7 +101,7 @@ class Graph:
         if filtered_candidates:
             return min(
                 filtered_candidates,
-                key=lambda anime: self.popularity.get(anime, float('inf'))
+                key=lambda x: self.popularity.get(x, float('inf'))
             )
 
         return None
@@ -108,8 +109,8 @@ class Graph:
 
 def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[str, tuple]]:
     """Read AnimeList.csv and build a graph with weighted edges."""
-    anime_graph = Graph()
-    anime_data = {}
+    graph = Graph()
+    data = {}
     genre_to_anime = {}
     studio_to_anime = {}
     title_to_id = {}
@@ -126,15 +127,18 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
             genres = row["genre"].split(", ") if row["genre"] else []
             studio = row["studio"]
             related = row["related"].split(", ") if row["related"] else []
-            popularity = int(row["popularity"]) if row["popularity"].isdigit() else float('inf')
+            try:
+                popularity = int(row["popularity"])
+            except ValueError:
+                popularity = math.inf
 
-            anime_graph.add_vertex(anime_id, popularity)
-            anime_data[anime_id] = (title, genres, studio, related)
+            graph.add_vertex(anime_id, popularity)
+            data[anime_id] = (title, genres, studio, related)
 
-            # Normalize and store titles (including official and alternative titles)
+            # making it so that title_to_id works with any of the synonymous titles
             normalized_titles = [title, title_english, title_japanese] + title_synonyms
             for norm_title in normalized_titles:
-                normalized_title = norm_title.strip().lower()  # Ensure case-insensitive comparison
+                normalized_title = norm_title.strip().lower()
                 title_to_id[normalized_title] = anime_id
 
             for genre in genres:
@@ -147,39 +151,39 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
                     studio_to_anime[studio] = set()
                 studio_to_anime[studio].add(anime_id)
 
-        # Build edges between anime in the same genre or studio
+        # creating edges between anime in the same genre or same studio
         for anime_list in genre_to_anime.values():
             anime_list = list(anime_list)
             for i in range(len(anime_list)):
                 for j in range(i + 1, len(anime_list)):
-                    anime_graph.add_edge(anime_list[i], anime_list[j], 2)
+                    graph.add_edge(anime_list[i], anime_list[j], 2)
 
         for anime_list in studio_to_anime.values():
             anime_list = list(anime_list)
             for i in range(len(anime_list)):
                 for j in range(i + 1, len(anime_list)):
-                    anime_graph.add_edge(anime_list[i], anime_list[j], 3)
+                    graph.add_edge(anime_list[i], anime_list[j], 3)
 
         # Add related anime as edges
-        for anime_id, (_, _, _, related) in anime_data.items():
+        for anime_id, (_, _, _, related) in data.items():
             for related_anime in related:
-                if related_anime in anime_data:
-                    anime_graph.add_edge(anime_id, related_anime, 1)
+                if related_anime in data:
+                    graph.add_edge(anime_id, related_anime, 1)
 
-    return anime_graph, title_to_id, anime_data
+    return graph, title_to_id, data
 
 
 if __name__ == "__main__":
     csv_file = "CleanedAnimeList.csv"  # Update with actual path
-    anime_graph, title_to_id, anime_data = build_anime_graph(csv_file)
+    anime_graph, anime_to_id, anime_data = build_anime_graph(csv_file)
 
     anime_name = input("Enter an anime name for recommendations: ").strip().lower()
 
-    while anime_name not in title_to_id:
+    while anime_name not in anime_to_id:
         anime_name = (input("Anime not found in the dataset. Please check for spelling or enter a different anime: ")
                       .strip().lower())
 
-    closest_anime_id = anime_graph.find_closest_anime(title_to_id[anime_name])
+    closest_anime_id = anime_graph.find_closest_anime(anime_to_id[anime_name])
     if closest_anime_id:
         print(f"Recommended Anime: {anime_data[closest_anime_id][0]}")
     else:
