@@ -106,6 +106,75 @@ class Graph:
 
         return None
 
+    def find_closest_candidates(self, start: Any) -> list:
+        """Return a list of closest anime candidates with shortest path + similar popularity."""
+        if start not in self._vertices:
+            return []
+
+        pq = [(0, start)]
+        distances = {v: float('inf') for v in self._vertices}
+        distances[start] = 0
+        visited = set()
+
+        while pq:
+            current_distance, current = heapq.heappop(pq)
+            if current in visited:
+                continue
+            visited.add(current)
+            for neighbor, weight in self._vertices[current].neighbours.items():
+                if neighbor.item not in visited:
+                    new_distance = current_distance + weight
+                    if new_distance < distances[neighbor.item]:
+                        distances[neighbor.item] = new_distance
+                        heapq.heappush(pq, (new_distance, neighbor.item))
+
+        min_dist = min([d for v, d in distances.items() if v != start], default=float('inf'))
+
+        candidates = [
+            v for v, d in distances.items()
+            if v != start and d == min_dist
+        ]
+
+        original_pop = self.popularity.get(start, float('inf'))
+        return [
+            v for v in candidates
+            if abs(self.popularity.get(v, float('inf')) - original_pop) <= 100
+        ]
+
+    def get_top_n_recommendations(self, start: Any, n: int = 5) -> list[str]:
+        """Return the top N closest anime to 'start' using shortest path and popularity as a tiebreaker."""
+        if start not in self._vertices:
+            return []
+
+        pq = [(0, start)]
+        distances = {v: float('inf') for v in self._vertices}
+        distances[start] = 0
+        visited = set()
+
+        while pq:
+            current_distance, current = heapq.heappop(pq)
+            if current in visited:
+                continue
+            visited.add(current)
+
+            for neighbor, weight in self._vertices[current].neighbours.items():
+                if neighbor.item not in visited:
+                    new_distance = current_distance + weight
+                    if new_distance < distances[neighbor.item]:
+                        distances[neighbor.item] = new_distance
+                        heapq.heappush(pq, (new_distance, neighbor.item))
+
+        # Remove the start node itself from candidates
+        candidates = [(anime, dist) for anime, dist in distances.items() if anime != start and dist != float('inf')]
+
+        # Sort by distance first, then by popularity (ascending means more popular if rank is lower)
+        sorted_candidates = sorted(
+            candidates,
+            key=lambda x: (x[1], self.popularity.get(x[0], float('inf')))
+        )
+
+        return [anime for anime, _ in sorted_candidates[:n]]
+
 
 def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[str, tuple]]:
     """Read AnimeList.csv and build a graph with weighted edges."""
@@ -119,14 +188,14 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
         reader = csv.DictReader(file)
 
         for row in reader:
-            anime_id = row["anime_id"]
+            anime_id = str(row["anime_id"]).strip()
             title = row["title"]
             title_english = row["title_english"]
             title_japanese = row["title_japanese"]
             title_synonyms = row["title_synonyms"].split(", ") if row["title_synonyms"] else []
             genres = row["genre"].split(", ") if row["genre"] else []
             studio = row["studio"]
-            related = row["related"].split(", ") if row["related"] else []
+            related = [r.strip() for r in row["related"].split(", ")] if row["related"] else []
             try:
                 popularity = int(row["popularity"])
             except ValueError:
