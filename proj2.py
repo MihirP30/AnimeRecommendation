@@ -5,6 +5,8 @@ import heapq
 import math
 from typing import Any
 
+CSV_FILE = "CleanedAnimeList.csv"
+
 
 class _Vertex:
     """A vertex in a graph."""
@@ -48,7 +50,7 @@ class Graph:
             return None
 
         pq = [(0, start)]  # Priority queue with (distance, anime_id)
-        distances = {vertex: float('inf') for vertex in self._vertices}
+        distances = {vertex: math.inf for vertex in self._vertices}
         distances[start] = 0
         visited = set()
 
@@ -69,7 +71,7 @@ class Graph:
 
         # Find the closest anime with the shortest weighted distance
         closest_anime_candidates = []
-        min_distance = float('inf')
+        min_distance = math.inf
 
         for anime, distance in distances.items():
             if anime != start and distance < min_distance:
@@ -78,9 +80,9 @@ class Graph:
             elif anime != start and distance == min_distance:
                 closest_anime_candidates.append(anime)
 
-        # If multiple anime have the same closeness, return the most popular one (excluding popularity = 0)
+        # If multiple anime have the same closeness, return the most popular one
         closest_anime_candidates = []
-        min_distance = float('inf')
+        min_distance = math.inf
 
         for anime, distance in distances.items():
             if anime != start and distance < min_distance:
@@ -90,18 +92,18 @@ class Graph:
                 closest_anime_candidates.append(anime)
 
         # Use a popularity similarity window (±1000 by default)
-        original_popularity = self.popularity.get(start, float('inf'))
+        original_popularity = self.popularity.get(start, math.inf)
         popularity_window = 100
 
         filtered_candidates = [
             anime for anime in closest_anime_candidates
-            if abs(self.popularity.get(anime, float('inf')) - original_popularity) <= popularity_window
+            if abs(self.popularity.get(anime, math.inf) - original_popularity) <= popularity_window
         ]
 
         if filtered_candidates:
             return min(
                 filtered_candidates,
-                key=lambda x: self.popularity.get(x, float('inf'))
+                key=lambda x: self.popularity.get(x, math.inf)
             )
 
         return None
@@ -112,7 +114,7 @@ class Graph:
             return []
 
         pq = [(0, start)]
-        distances = {v: float('inf') for v in self._vertices}
+        distances = {v: math.inf for v in self._vertices}
         distances[start] = 0
         visited = set()
 
@@ -128,17 +130,17 @@ class Graph:
                         distances[neighbor.item] = new_distance
                         heapq.heappush(pq, (new_distance, neighbor.item))
 
-        min_dist = min([d for v, d in distances.items() if v != start], default=float('inf'))
+        min_dist = min([d for v, d in distances.items() if v != start], default=math.inf)
 
         candidates = [
             v for v, d in distances.items()
             if v != start and d == min_dist
         ]
 
-        original_pop = self.popularity.get(start, float('inf'))
+        original_pop = self.popularity.get(start, math.inf)
         return [
             v for v in candidates
-            if abs(self.popularity.get(v, float('inf')) - original_pop) <= 100
+            if abs(self.popularity.get(v, math.inf) - original_pop) <= 100
         ]
 
     def get_top_n_recommendations(self, start: Any, n: int = 5) -> list[str]:
@@ -147,7 +149,7 @@ class Graph:
             return []
 
         pq = [(0, start)]
-        distances = {v: float('inf') for v in self._vertices}
+        distances = {v: math.inf for v in self._vertices}
         distances[start] = 0
         visited = set()
 
@@ -165,12 +167,12 @@ class Graph:
                         heapq.heappush(pq, (new_distance, neighbor.item))
 
         # Remove the start node itself from candidates
-        candidates = [(anime, dist) for anime, dist in distances.items() if anime != start and dist != float('inf')]
+        candidates = [(anime, dist) for anime, dist in distances.items() if anime != start and dist != math.inf]
 
         # Sort by distance first, then by popularity (ascending means more popular if rank is lower)
         sorted_candidates = sorted(
             candidates,
-            key=lambda x: (x[1], self.popularity.get(x[0], float('inf')))
+            key=lambda x: (x[1], self.popularity.get(x[0], math.inf))
         )
 
         return [anime for anime, _ in sorted_candidates[:n]]
@@ -243,8 +245,7 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
 
 
 if __name__ == "__main__":
-    csv_file = "CleanedAnimeList.csv"  # Update with actual path
-    anime_graph, anime_to_id, anime_data = build_anime_graph(csv_file)
+    anime_graph, anime_to_id, anime_data = build_anime_graph(CSV_FILE)
 
     anime_name = input("Enter an anime name for recommendations: ").strip().lower()
 

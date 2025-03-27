@@ -22,7 +22,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Anime Recommendation System")
 
 #  Load anime graph and data
-csv_file = "CleanedAnimeList.csv"
+csv_file = "SmallAnimeList.csv"
 anime_graph, title_to_id, anime_data = build_anime_graph(csv_file)
 
 # UI Element Rectangles
@@ -48,6 +48,7 @@ searching = False
 search_start_time = 0
 SEARCH_DURATION = 4000  # 4 seconds
 search_action = None  # "submit" or "new"
+first_rec_done = False
 
 
 def draw():
@@ -59,8 +60,8 @@ def draw():
 
     # Draw input box and buttons
     pygame.draw.rect(screen, GRAY, input_box, 2)
-    pygame.draw.rect(screen, BLUE, submit_button)
-    pygame.draw.rect(screen, GREEN, new_rec_button)
+    button_color = BLUE if first_rec_done else GREEN
+    pygame.draw.rect(screen, button_color, new_rec_button)
     pygame.draw.rect(screen, RED, reset_button)
 
     # Render user input
@@ -68,8 +69,8 @@ def draw():
     screen.blit(input_surface, (input_box.x + 10, input_box.y + 5))
 
     # Render button labels
-    screen.blit(FONT.render("Get Recommendation", True, WHITE), (submit_button.x + 10, submit_button.y + 8))
-    screen.blit(FONT.render("Another Recommendation", True, WHITE), (new_rec_button.x + 10, new_rec_button.y + 8))
+    button_desc = "Recommend Another" if first_rec_done else "Get Recommendation"
+    screen.blit(FONT.render(button_desc, True, WHITE), (new_rec_button.x + 10, new_rec_button.y + 8))
     screen.blit(FONT.render("Reset", True, WHITE), (reset_button.x + 90, reset_button.y + 8))
 
     # Display current recommendation
@@ -113,15 +114,9 @@ while running:
             else:
                 active = False
 
-            #  Get Recommendation Button Clicked
-            if submit_button.collidepoint(event.pos) and not searching:
-                search_action = 'submit'
-                search_start_time = pygame.time.get_ticks()
-                searching = True
-
-            # Another Recommendation Button Clicked
+            # Recommendation Button Clicked
             if new_rec_button.collidepoint(event.pos) and not searching:
-                search_action = 'new'
+                search_action = 'new' if first_rec_done else 'submit'
                 search_start_time = pygame.time.get_ticks()
                 searching = True
 
@@ -139,6 +134,7 @@ while running:
                 rec_index = 0
                 search_action = None
                 searching = False
+                first_rec_done = False
 
         # Handle keyboard input
         if event.type == pygame.KEYDOWN and active:
@@ -155,11 +151,12 @@ while running:
         if elapsed >= SEARCH_DURATION:
             normalized = user_text.strip().lower()
 
-            if normalized in title_to_id:
+            if normalized in title_to_id and normalized != "":
                 anime_id = title_to_id[normalized]
 
                 if search_action == 'submit':
                     # Get closest recommendation
+                    first_rec_done = True
                     closest_id = anime_graph.find_closest_anime(anime_id)
                     if closest_id:
                         closest_recommendation = anime_data[closest_id][0]
@@ -178,7 +175,7 @@ while running:
                         pending_recommendation = ''
                         pending_error = 'No recommendations found.'
 
-                elif search_action == 'new':
+                if search_action == 'new':
                     if normalized != last_input:
                         closest_id = anime_graph.find_closest_anime(anime_id)
                         closest_recommendation = anime_data[closest_id][0] if closest_id else ''
