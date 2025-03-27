@@ -1,3 +1,18 @@
+"""
+This file creates an anime recommendation program using a graph, representing different anime as nodes and definging
+their similarities with edges. Recommendations are reated  using the shortest path and popularity.
+
+Key Features:
+    - Graph construction from a CSV dataset obtained from My Anime List (MAL).
+    - Recommendations are generated based on similarity and populatity.
+
+Modules:
+    - csv: Reads and processes our dataset.
+    - heapq: Implements Dijkstra's algorithm for shortest path computation.
+    - math: Provides utility constants and functions.
+    - typing: Enables type hinting for better code clarity.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -9,7 +24,12 @@ CSV_FILE = "CleanedAnimeList.csv"
 
 
 class _Vertex:
-    """A vertex in a graph."""
+    """A vertex in a graph which represents an anime.
+
+    Attributes:
+        item: The unique identifier of an anime.
+        neighbours: A dictionary mapping neighboring vertices to the weight of the edges connecting them.
+    """
     item: Any
     neighbours: dict[_Vertex, int]  # Stores neighbors with weights
 
@@ -20,7 +40,18 @@ class _Vertex:
 
 
 class Graph:
-    """A graph data structure."""
+    """A graph data structure to represent relationships and similarity between different anime.
+
+    Attributes:
+        _vertices: A dictionary mapping items (anime IDs) to their corresponding vertices.
+        popularity: A dictionary storing the popularity score of each anime.
+
+    Representation Invariants:
+        - all(isinstance(v, _Vertex) for v in self._vertices.values())
+        - all(isinstance(p, int) for p in self.popularity.values())
+        - all(w > 0 for v in self._vertices.values() for w in v.neighbours.values())
+    """
+
     _vertices: dict[Any, _Vertex]
     popularity: dict[Any, int]  # Store popularity of each anime
 
@@ -30,13 +61,26 @@ class Graph:
         self.popularity = {}
 
     def add_vertex(self, item: Any, popularity: int) -> None:
-        """Add a vertex with the given item and store its popularity."""
+        """Add a vertex to the graph and store its popularity.
+
+        Preconditions:
+            - item not in self._vertices
+            - isinstance(popularity, int)
+            - popularity > 0
+        """
         if item not in self._vertices:
             self._vertices[item] = _Vertex(item)
             self.popularity[item] = popularity  # Store popularity
 
     def add_edge(self, item1: Any, item2: Any, weight: int) -> None:
-        """Add a weighted edge between two vertices."""
+        """Add a weighted edge between any two vertices in the graph.
+
+        Preconditions:
+            - item1 in self._vertices
+            - item2 in self._vertices
+            - isinstance(weight, int) and weight > 0
+            - item1 != item2
+        """
         if item1 in self._vertices and item2 in self._vertices:
             v1 = self._vertices[item1]
             v2 = self._vertices[item2]
@@ -44,7 +88,12 @@ class Graph:
             v2.neighbours[v1] = weight
 
     def find_closest_anime(self, start: Any) -> Any:
-        """Find the closest anime recommendation using Dijkstra's algorithm with popularity as a tiebreaker."""
+        """Find the most similar anime to recommend using Dijkstra's algorithm.
+
+        Preconditions:
+            - start in self._vertices
+            - all(isinstance(p, int) for p in self.popularity.values())
+        """
         if start not in self._vertices:
             print("Anime not found in the dataset.")
             return None
@@ -109,7 +158,8 @@ class Graph:
         return None
 
     def find_closest_candidates(self, start: Any) -> list:
-        """Return a list of closest anime candidates with shortest path + similar popularity."""
+        """Return a list of the most similar anime based on shortest path and similar popularity.
+        """
         if start not in self._vertices:
             return []
 
