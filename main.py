@@ -1,3 +1,19 @@
+"""
+Anime Recommendation System
+
+This file creates a graphical user interface (GUI) for an anime recommendation system. This program uses the Pygame
+class to create the GUI for user inteaction and visualization, which it uses a recommendation software to create and
+provide anime title recommendations.
+
+The interface is implemented using Pygame,which provides functionalities like inputting text, creating buttons, progress
+bars, etc. After launching the class and inputting an anime, users can reset the input or get another recommendation.
+
+Modules:
+    - pygame: Used to create the graphical user interface.
+    - sys: Provides system-specific parameters and functions.
+    - proj2: Program used to construct the graph and provide recommendations
+"""
+
 import pygame
 import sys
 from proj2 import build_anime_graph
@@ -52,9 +68,8 @@ first_rec_done = False
 
 
 def draw():
-    """
-    Draws all UI elements on the screen, including input box,
-    buttons, recommendation text, error messages, and progress bar.
+    """This function draws the user interface onto the screen, rendering the input box, buttons, recommendation, error
+    messages, and progress bar. The interface is updated after all elements are drawn onto the screen.
     """
     screen.fill(WHITE)
 
