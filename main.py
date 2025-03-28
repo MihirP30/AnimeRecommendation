@@ -4,14 +4,8 @@ Anime Recommendation System Front-End
 This file creates a graphical user interface (GUI) for the anime recommendation system. This program uses the Pygame
 class to create the GUI for user inteaction and visualization. It uses the recommendation software from proj2.py to
 create and provide anime title recommendations.
-
-Modules:
-    - pygame: Used to create the graphical user interface.
-    - sys: Provides system-specific parameters and functions.
-    - requests: Used to retrieve the anime images from their urls
-    - io.BytesIO: Helps display the images on screen by converting them to a better datatype for pygame
-    - proj2: Program used to construct the graph and provide recommendations
 """
+
 import sys
 import requests
 from io import BytesIO
