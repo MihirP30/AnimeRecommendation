@@ -38,7 +38,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Anime Recommendation System")
 
 #  Load anime graph and data
-csv_file = "SmallAnimeList.csv"
+csv_file = "CleanedAnimeList.csv"
 anime_graph, title_to_id, anime_data = build_anime_graph(csv_file)
 
 # UI Element Rectangles
