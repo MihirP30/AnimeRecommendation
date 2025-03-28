@@ -16,6 +16,7 @@ filtered_df = df[
     (df['score'] > 0) &
     (df['scored_by'] > 0) &
     (~df['genre'].str.lower().str.contains('ecchi', na=False)) &
+    (~df['genre'].str.lower().str.contains('hentai', na=False)) &
     (df['image_url'].notna()) &
     (df['image_url'].str.strip() != '')
 ]

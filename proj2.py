@@ -1,11 +1,16 @@
-from __future__ import annotations
+"""
+Anime Recommendation System Back-End
 
+This file creates the weighted graph which stores the data from the csv file. It also finds the closest anime using
+Dijkstra's Algorithm along with a popularity filter. This file is console-based and does not have a user-friendly UI
+but functions from this file are also used in main.py to build such a UI using pygame.
+"""
+
+from __future__ import annotations
 import csv
 import heapq
 import math
 from typing import Any
-
-CSV_FILE = "CleanedAnimeList.csv"
 
 
 class _Vertex:
@@ -95,8 +100,8 @@ class Graph:
         popularity_window = 100
 
         filtered_candidates = [
-            anime for anime in closest_anime_candidates
-            if abs(self.popularity.get(anime, math.inf) - original_popularity) <= popularity_window
+            candidate for candidate in closest_anime_candidates
+            if abs(self.popularity.get(candidate, math.inf) - original_popularity) <= popularity_window
         ]
 
         if filtered_candidates:
@@ -255,7 +260,8 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
 
 
 if __name__ == "__main__":
-    anime_graph, anime_to_id, anime_data = build_anime_graph(CSV_FILE)
+    csv_file = "CleanedAnimeList.csv"
+    anime_graph, anime_to_id, anime_data = build_anime_graph(csv_file)
 
     anime_name = input("Enter an anime name for recommendations: ").strip().lower()
 
