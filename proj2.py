@@ -1,18 +1,3 @@
-"""
-This file creates an anime recommendation program using a graph, representing different anime as nodes and definging
-their similarities with edges. Recommendations are reated  using the shortest path and popularity.
-
-Key Features:
-    - Graph construction from a CSV dataset obtained from My Anime List (MAL).
-    - Recommendations are generated based on similarity and populatity.
-
-Modules:
-    - csv: Reads and processes our dataset.
-    - heapq: Implements Dijkstra's algorithm for shortest path computation.
-    - math: Provides utility constants and functions.
-    - typing: Enables type hinting for better code clarity.
-"""
-
 from __future__ import annotations
 
 import csv
@@ -24,12 +9,7 @@ CSV_FILE = "CleanedAnimeList.csv"
 
 
 class _Vertex:
-    """A vertex in a graph which represents an anime.
-
-    Attributes:
-        item: The unique identifier of an anime.
-        neighbours: A dictionary mapping neighboring vertices to the weight of the edges connecting them.
-    """
+    """A vertex in a graph."""
     item: Any
     neighbours: dict[_Vertex, int]  # Stores neighbors with weights
 
@@ -40,18 +20,7 @@ class _Vertex:
 
 
 class Graph:
-    """A graph data structure to represent relationships and similarity between different anime.
-
-    Attributes:
-        _vertices: A dictionary mapping items (anime IDs) to their corresponding vertices.
-        popularity: A dictionary storing the popularity score of each anime.
-
-    Representation Invariants:
-        - all(isinstance(v, _Vertex) for v in self._vertices.values())
-        - all(isinstance(p, int) for p in self.popularity.values())
-        - all(w > 0 for v in self._vertices.values() for w in v.neighbours.values())
-    """
-
+    """A graph data structure."""
     _vertices: dict[Any, _Vertex]
     popularity: dict[Any, int]  # Store popularity of each anime
 
@@ -61,26 +30,13 @@ class Graph:
         self.popularity = {}
 
     def add_vertex(self, item: Any, popularity: int) -> None:
-        """Add a vertex to the graph and store its popularity.
-
-        Preconditions:
-            - item not in self._vertices
-            - isinstance(popularity, int)
-            - popularity > 0
-        """
+        """Add a vertex with the given item and store its popularity."""
         if item not in self._vertices:
             self._vertices[item] = _Vertex(item)
             self.popularity[item] = popularity  # Store popularity
 
     def add_edge(self, item1: Any, item2: Any, weight: int) -> None:
-        """Add a weighted edge between any two vertices in the graph.
-
-        Preconditions:
-            - item1 in self._vertices
-            - item2 in self._vertices
-            - isinstance(weight, int) and weight > 0
-            - item1 != item2
-        """
+        """Add a weighted edge between two vertices."""
         if item1 in self._vertices and item2 in self._vertices:
             v1 = self._vertices[item1]
             v2 = self._vertices[item2]
@@ -88,17 +44,12 @@ class Graph:
             v2.neighbours[v1] = weight
 
     def find_closest_anime(self, start: Any) -> Any:
-        """Find the most similar anime to recommend using Dijkstra's algorithm.
-
-        Preconditions:
-            - start in self._vertices
-            - all(isinstance(p, int) for p in self.popularity.values())
-        """
+        """Find the closest anime recommendation using Dijkstra's algorithm with popularity as a tiebreaker."""
         if start not in self._vertices:
             print("Anime not found in the dataset.")
             return None
 
-        pq = [(0, start)]  # Priority queue with (distance, anime_id)
+        pq = [(0, start)]  # priority queue but with a list instead of a full ADT class
         distances = {vertex: math.inf for vertex in self._vertices}
         distances[start] = 0
         visited = set()
@@ -129,7 +80,7 @@ class Graph:
             elif anime != start and distance == min_distance:
                 closest_anime_candidates.append(anime)
 
-        # If multiple anime have the same closeness, return the most popular one
+        # If multiple anime have the same closeness, return the one with the most similar popularity score
         closest_anime_candidates = []
         min_distance = math.inf
 
@@ -140,7 +91,6 @@ class Graph:
             elif anime != start and distance == min_distance:
                 closest_anime_candidates.append(anime)
 
-        # Use a popularity similarity window (±1000 by default)
         original_popularity = self.popularity.get(start, math.inf)
         popularity_window = 100
 
@@ -158,8 +108,7 @@ class Graph:
         return None
 
     def find_closest_candidates(self, start: Any) -> list:
-        """Return a list of the most similar anime based on shortest path and similar popularity.
-        """
+        """Return a list of closest anime candidates with shortest path + similar popularity."""
         if start not in self._vertices:
             return []
 
@@ -194,7 +143,7 @@ class Graph:
         ]
 
     def get_top_n_recommendations(self, start: Any, n: int = 5) -> list[str]:
-        """Return the top N closest anime to 'start' using shortest path and popularity as a tiebreaker."""
+        """Return the top N closest anime to 'start' using shortest path and popularity similarity."""
         if start not in self._vertices:
             return []
 
@@ -216,13 +165,23 @@ class Graph:
                         distances[neighbor.item] = new_distance
                         heapq.heappush(pq, (new_distance, neighbor.item))
 
-        # Remove the start node itself from candidates
+        # Remove start node from candidates
         candidates = [(anime, dist) for anime, dist in distances.items() if anime != start and dist != math.inf]
 
-        # Sort by distance first, then by popularity (ascending means more popular if rank is lower)
+        # Get original anime popularity
+        original_popularity = self.popularity.get(start, math.inf)
+        popularity_window = 100  # Set threshold for similarity
+
+        # Filter candidates within popularity window
+        filtered_candidates = [
+            (anime, dist) for anime, dist in candidates
+            if abs(self.popularity.get(anime, math.inf) - original_popularity) <= popularity_window
+        ]
+
+        # Sort by distance first, then by closest popularity instead of raw popularity rank
         sorted_candidates = sorted(
-            candidates,
-            key=lambda x: (x[1], self.popularity.get(x[0], math.inf))
+            filtered_candidates,
+            key=lambda x: (x[1], abs(self.popularity.get(x[0], math.inf) - original_popularity))
         )
 
         return [anime for anime, _ in sorted_candidates[:n]]
@@ -248,13 +207,14 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
             genres = row["genre"].split(", ") if row["genre"] else []
             studio = row["studio"]
             related = [r.strip() for r in row["related"].split(", ")] if row["related"] else []
+            img = row["image_url"]
             try:
                 popularity = int(row["popularity"])
             except ValueError:
                 popularity = math.inf
 
             graph.add_vertex(anime_id, popularity)
-            data[anime_id] = (title, genres, studio, related)
+            data[anime_id] = (title, genres, studio, related, img)
 
             # making it so that title_to_id works with any of the synonymous titles
             normalized_titles = [title, title_english, title_japanese] + title_synonyms
@@ -285,8 +245,8 @@ def build_anime_graph(csv_filename: str) -> tuple[Graph, dict[str, str], dict[st
                 for j in range(i + 1, len(anime_list)):
                     graph.add_edge(anime_list[i], anime_list[j], 3)
 
-        # Add related anime as edges
-        for anime_id, (_, _, _, related) in data.items():
+        # creating edges between related anime
+        for anime_id, (_, _, _, related, _) in data.items():
             for related_anime in related:
                 if related_anime in data:
                     graph.add_edge(anime_id, related_anime, 1)
